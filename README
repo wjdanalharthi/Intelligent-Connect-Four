@@ -8,8 +8,8 @@
 	2) follow the instructions in game.sh to learn more about the arguments needed. Below are
 	   a couple of examples of how to run the game with different parameters
 	
-	./game.sh	 		==>	runs the game with default board dimensions and 
-						player types and lookaheads (found in globals.jl) 
+	./game.sh      	 	==>	runs the game with default board dimensions and 
+					player types and lookaheads (found in globals.jl) 
 
 	./game.sh 67 rc         ==>     runs the game with a board of size 6x7
                                         and Player 1 with Expectiminimax, and
