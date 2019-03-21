@@ -1,3 +1,5 @@
+include("board.jl")
+include("player.jl")
 
 function test_board()
 	b = Board(7, 7)
@@ -26,6 +28,19 @@ end
 
 function test_player()
 	println("Not Implemented Yet")
+end
+
+function test_eval()
+	b = Board(7, 7)
+	#add_checkers(b, "112131")
+	add_checkers(b, "2334454551");
+	println(b)
+
+	println("For checker O")
+	state_eval(b, 'O')
+	println("\n")
+	println("For checker X")
+	state_eval(b, 'X')
 end
 
 function run_tests()

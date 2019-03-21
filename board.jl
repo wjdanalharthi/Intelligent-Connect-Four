@@ -1,51 +1,44 @@
+"""
+FILE NAME: board.jl
 
-mutable struct Board
-	height::Int64
-	width::Int64
-	slots::Array{Char, 2}
+DESCRIBTION: this file holds functions applied to a Board struct
+	     object such as adding checkers, clearing the board, 
+	     and checking for winners
+"""
+
+include("structs.jl")
+
+function clear(b::Board)
+	""" clears the board slots """
+	b.slots = fill(' ', (b.height, b.width))
 end
 
-function Board(height, width)
-	slots = fill(' ', (height, width))
-	return Board(height, width, slots)
-end
-
-function Base.show(io::IO, x::Board)
-	Base.show(io, "text/plain", x.slots)
-end
-
-function clear(x::Board)
-	x.slots = fill(' ', (x.height, x.width))
-end
-
-function can_add_to(x::Board, c::Int64)
-        return x.slots[1,c] == ' '
+function can_add_to(b::Board, c::Int64)
+	""" checkks if column c is not full """
+        return b.slots[1,c] == ' '
 end
 
 function available_cols(b::Board)
+	""" returns a list of available columns """
 	return [i for i in range(1, stop=b.width) if can_add_to(b, i)]
 end
 
 function is_full(b::Board)
+	""" checks if the board b is full """
 	for i = 1:b.width
-		if b.slots[1, i] == ' '
-			return false
-		end
+		if b.slots[1, i] == ' ' return false end
 	end
 	return true
 end
 
 function add_checker(x::Board, c::Int64, checker::Char)
-	@assert(checker in ['O', 'X'], "invalid checker")
+	""" adds a checker to the board b at column c """
 
+	# asserts whether the checker is legal
+	@assert(checker in ['O', 'X'], "invalid checker")
 	r = 0
 	for i = 1:x.height
-		#println("checking $i, $c")
-		if x.slots[i, c] == ' '
-			r+=1
-		else
-			break
-		end
+		if x.slots[i, c] == ' ' r+=1 else break end
 	end
 
 	if r == 0
@@ -58,8 +51,12 @@ function add_checker(x::Board, c::Int64, checker::Char)
 end
 
 function add_checkers(b::Board, cols::String)
-	@assert(sum([true for x in cols if parse(Int64,x) <= b.width]) == length(cols), "invalid column")
+	""" takes a string of column numbers and alternates adding 
+	     checkers to the columns 
+	"""
 
+	# assets the column numbers are correct before adding
+	@assert(sum([true for x in cols if parse(Int64,x) <= b.width]) == length(cols), "invalid column")
 	checker = 'O'
 	for col in cols
 		add_checker(b, parse(Int64, col), checker)
@@ -72,29 +69,37 @@ function add_checkers(b::Board, cols::String)
 	end
 end
 
-#remove checker?
-function remove_checker() 
-	println("Not Implemented Yet")
+function remove_checker(b::Board, c::Int64)
+	""" removes the top checker from column c """
+	for i = 1:b.height
+		if b.slots[i, c] != ' '
+			b.slots[i, c] = ' '
+			break
+		end
+	end
 end
 
 function heighest_row(b::Board, c::Int64)
+	""" gets the top free row in column c """
 	i = 1
 	for i = 1:b.height
 		if b.slots[i, c] != ' '
 			return i
 		end
 	end
-	return -1
+	return b.height
 end 
 
+
+# =========================== Winning Checks ===========================
+
 function is_vertical_win(b::Board, c::Int64, checker::Char)
+	""" looks for 4 consecutive checkers vertically at col c"""
 	hr = heighest_row(b, c)
 	@assert(hr <= b.height && hr != -1, "invalid highest row")
 
-	count = 0
-	i = 0
+	count = i = 0
 	while count < 4 && (hr + i) <= b.height
-		#println("checking $(hr+i), $c")
 		if b.slots[hr+i, c] == checker
 			count += 1
 		else 
@@ -102,15 +107,10 @@ function is_vertical_win(b::Board, c::Int64, checker::Char)
 		end
 		i += 1
 	end
-
-	#println("number of checker1 $count")
-	if count >= 4 
-		return true
-	end
+        if count >= 4 return true end
 
 	i = 1
 	while count < 4 && (hr - i) > 0
-		#println("checking $(hr-i), $c")
 		if b.slots[hr - i, c] == checker
 			count += 1
 		else
@@ -118,23 +118,18 @@ function is_vertical_win(b::Board, c::Int64, checker::Char)
 		end 
 		i += 1
 	end
-
-	#println("number of checker2 $count")
-	if count >= 4 
-		return true
-	end
+        if count >= 4 return true end
 
 	return false
 end
 
 function is_horizontal_win(b::Board, c::Int64, checker::Char)
-        hr = heighest_row(b, c)
+        """ looks for 4 consecutive checkers horizontally at col c"""
+	hr = heighest_row(b, c)
         @assert(hr <= b.height && hr != -1, "invalid highest row")
 	
-	count = 0
-        i = 0
+	count = i = 0
         while count < 4 && (c + i) <= b.width
-                #println("checking $(c+i), $c")
                 if b.slots[hr, c+i] == checker
                         count += 1
                 else
@@ -142,15 +137,10 @@ function is_horizontal_win(b::Board, c::Int64, checker::Char)
                 end
                 i += 1
         end
-
-        #println("number of checker1 $count")
-        if count >= 4
-                return true
-        end
+        if count >= 4 return true end
 
 	i = 1
 	while count < 4 && (c - i) > 0
-                #println("checking $(c-i), $c")
                 if b.slots[hr, c-i] == checker
                         count += 1
                 else
@@ -158,22 +148,19 @@ function is_horizontal_win(b::Board, c::Int64, checker::Char)
                 end
                 i += 1
         end
-
-        #println("number of checker2 $count")
-        if count >= 4
-                return true
-        end
+        if count >= 4 return true end
 
 	return false
 end
 
 function is_up_diagonal_win(b::Board, c::Int64, checker::Char)
-        hr = heighest_row(b, c)
+        """ looks for 4 consecutive checkers up diagonally (from left to right
+	    around col c
+	"""
+	hr = heighest_row(b, c)
         @assert(hr <= b.height && hr != -1, "invalid highest row")
 
-	count = 0
-	i = 0
-	j = 0
+	count = i = j = 0
 	while count < 4 && (hr-i) > 0 && (c+j) <= b.width
 		if b.slots[hr-i, c+j] == checker
 			count += 1
@@ -183,14 +170,9 @@ function is_up_diagonal_win(b::Board, c::Int64, checker::Char)
 		i += 1
 		j += 1
 	end
+        if count >= 4 return true end
 
-        #println("number of checker1 $count")
-        if count >= 4
-                return true
-        end
-
-        i = 1
-        j = 1
+        i = j = 1
         while count < 4 && (hr+i) <= b.height && (c-j) > 0
                 if b.slots[hr+i, c-j] == checker
                         count += 1
@@ -200,22 +182,19 @@ function is_up_diagonal_win(b::Board, c::Int64, checker::Char)
                 i += 1
                 j += 1
         end
+        if count >= 4 return true end
 
-	#println("number of checker2 $count")
-        if count >= 4
-                return true
-        end
-	
 	return false
 end
 
 function is_down_diagonal_win(b::Board, c::Int64, checker::Char)
-        hr = heighest_row(b, c)
+        """ looks for 4 consecutive checkers down diagonally (from 
+	    left to right around col c
+        """
+	hr = heighest_row(b, c)
         @assert(hr <= b.height && hr != -1, "invalid highest row")
 
-        count = 0
-        i = 0
-        j = 0
+        count = i = j = 0
         while count < 4 && (hr+i) <= b.height && (c+j) <= b.width
                 if b.slots[hr+i, c+j] == checker
                         count += 1
@@ -225,14 +204,9 @@ function is_down_diagonal_win(b::Board, c::Int64, checker::Char)
                 i += 1
                 j += 1
         end
+        if count >= 4 return true end
 
-        #println("number of checker1 $count")
-        if count >= 4
-                return true
-        end
-
-        i = 1
-        j = 1
+        i = j = 1
         while count < 4 && (hr-i) > 0 && (c-j) > 0
                 if b.slots[hr-i, c-j] == checker
                         count += 1
@@ -242,22 +216,32 @@ function is_down_diagonal_win(b::Board, c::Int64, checker::Char)
                 i += 1
                 j += 1
         end
-
-        #println("number of checker2 $count")
-        if count >= 4
-                return true
-        end
+        if count >= 4 return true end
 
         return false
 end
 
 function is_win_for(b::Board, c::Int64, checker::Char)
+	""" checks if there are 4 consecutive chekcer around
+	    column c in any direction
+	"""
 	return is_vertical_win(b, c, checker) ||
 	is_horizontal_win(b, c, checker) ||
 	is_up_diagonal_win(b, c, checker) ||
 	is_down_diagonal_win(b, c, checker)
 end
 
-#b = Board(5,5)
-#b.slots[1] = 'd'
-#clear(b)
+
+function is_win_for_anywhere(b::Board, checker::Char)
+	""" looks for a win for checker anywhere on the board """
+	
+	for c = 1:b.width
+		if is_vertical_win(b, c, checker) ||
+			is_horizontal_win(b, c, checker) ||
+			is_up_diagonal_win(b, c, checker) ||
+			is_down_diagonal_win(b, c, checker)
+			return true
+		end
+	end
+	return false
+end

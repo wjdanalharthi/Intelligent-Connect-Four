@@ -1,0 +1,8 @@
+"""
+FILE NAME: discussion.txt
+
+DESCRIBTION: this file discusses the performance of different AI players
+	     and the evaluation function performance. 
+"""
+
+

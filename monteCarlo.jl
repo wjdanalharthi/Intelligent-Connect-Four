@@ -1,0 +1,155 @@
+"""
+FILE NAME: monteCarlo.jl
+
+DESCRIBTION: this file contains the implementaion of Monte Carlo Search
+	     tree algorithm, and its helper functions.
+"""
+
+# global data strcutures to keep track of states and 
+# their statistics
+plays = Dict()
+wins = Dict()
+
+function monte_carlo_search(b::Board, p::Player, simulationsNum::Int64)
+        """ this is the implementation of Monte Carlo algorithm
+	"""
+
+	# obtains available columns. If there is only one
+	# column left, it returns it
+	valid_col = available_cols(b)
+        if length(valid_col) == 1
+                return valid_col[1]
+        end
+
+	# starts simulations until simulationsNum is reached
+        gamesPlayed = 0
+        while(gamesPlayed <= simulationsNum)
+                gamesPlayed += 1
+                runSimulation(b, p)
+        end
+
+	# after simulations are done, we calculate statistics
+        play = nothing
+        movesState = []
+        ratios = Dict()
+       
+	# we obtain all states and their children for available columns
+	for i in valid_col
+                nextS = getNext(deepcopy(b), i, p.checker)
+                append!(movesState, [[i, nextS]])
+        end
+
+	# then for each state, if visited, then we calculate the ratio
+        for j=1:length(movesState)
+                play = [p.checker, movesState[j][2]]
+                if play in keys(wins)
+                        ratios[movesState[j][1]] = wins[play]/plays[play]
+                else
+                        ratios[movesState[j][1]] = 0
+                end
+        end
+        
+	# we return the column number of the maximum ratio
+	return findmax(ratios)[2]
+end
+
+function getNext(b::Board, c::Int64, checker::Char)
+	""" obtains a new copy of the board successor """
+        add_checker(b, c, checker)
+        return b.slots
+end
+
+function find_winner(b::Board, p::Player)
+	""" checks for winners in the board """
+        if is_win_for_anywhere(b, p.checker)
+                return p.checker
+        elseif is_win_for_anywhere(b, opponent_checker(p))
+                return opponent_checker(p)
+        else
+                return -1
+        end
+end
+
+function UCT(w, n, c, N)
+	""" calculates the UCT given 
+	    w: # of wins of current state 
+	    n: # of plays at current state
+	    c: exploration parameter
+	    N: total # of simulations 
+	"""
+	return (w/n) + c*sqrt(log(N)/n)
+end
+
+function runSimulation(b::Board, p::Player)
+	""" we run the simulations here """ 
+        visitedStates = []
+        checker = p.checker
+        expand = true
+        winnerChecker = -1
+	state = deepcopy(b.slots)
+
+	# will keep simulating until no columns are left
+	# or a winner is found
+        while true
+		# obtains available cols, if none, break
+                valid_col = available_cols(Board(state))
+                if length(valid_col) == 0
+                        break
+                end
+
+		# obtains all children of current state
+                states = [(p, getNext(Board(state), p, checker)) for p in valid_col]
+
+		# if we have explored all children, then calculate UTC scores
+		# and return the maximum. Otherwise, randomly explore another child
+                if sum([haskey(plays, i) for i in states]) == length(states)
+			w = wins[i]
+			n = plays[i]
+                        N = sum([plays[i] for i in states])
+
+			all_scores = [UTC(w, n, C, N) for i in states]
+                        value, move, state = max(all_scores)
+                else
+                        move, state = rand(states)
+                end
+
+		# if we have not explored current child, initialize its stats
+                if expand && !([checker, state] in keys(plays))
+                        expand = false
+                        plays[[checker, state]] = 0
+                        wins[[checker, state]] = 0
+                end
+
+		# if we haven't visited the current state, add it to array
+                if !([checker, state] in visitedStates)
+                        append!(visitedStates, [[checker, state]])
+                end
+
+		# check for winners in current state
+                possibe_winner = find_winner(Board(state), p)
+                if possibe_winner != -1
+                        winnerChecker = possibe_winner
+                        break
+                end
+
+		# switch checkers
+                checker = opponent_checker(p)
+                p = deepcopy(p)
+                p.checker = checker
+        end
+
+	# after simulations are done, update statistics of states
+        for i=1:length(visitedStates)
+                checker = visitedStates[i][1]
+                state = visitedStates[i][2]
+
+                if !([checker, state] in keys(plays))
+                        continue
+                end
+
+                plays[[checker, state]] += 1
+                if checker == winnerChecker
+                        wins[[checker, state]] += 1
+                end
+        end
+end

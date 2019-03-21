@@ -1,0 +1,24 @@
+"""
+FILE NAME: questions.txt
+
+DESCRIBTION: this file contains the answers for Q1 and Q3
+"""
+
+
+1) Provide an upper bound for the number of positions in
+Connect Four on a 7×6 board. Explain how you derived your answer.
+
+>>> for each slot in a board of size MxN, we have 3 possible states,
+which are checker X, checker O, or empty. So we have 3^(MxN) possibilities.
+Hence, for a 6x7 board size, we have 3^42 possibilites. 
+
+
+3) Implement an intelligent agent to play Connect Four using
+the Minimax algorithm. How many plys can you look ahead? What is the
+branching factor of your game tree?
+
+>>> The lookahead I can get to is 7 or 8, after that it gets much slower.
+As for the branching factor, it depends on the available columns that a 
+player can add to. The maximum is 7 for a board with 7 columns, and the
+minimum is 1 when there is only one column left. 
+
