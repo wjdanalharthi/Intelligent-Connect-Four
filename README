@@ -1,14 +1,7 @@
-"""
-FILE NAME: README.txt
-
-DESCRIBTION: this file contains detailed information about the project.
-	     Specifically, the project strcuture, and the algorithms 
-	     implementations.
-"""
 
 ## Project Name: Connect Four Game
 ## Project Description
-This project implements the game of Connect Four wih different types of players. The players can be Humanor AI. The AI players can use different algorithms, including Minimax and Monte Carlo Search Tree. 
+	This project implements the game of Connect Four wih different types of players. The players can be Humanor AI. The AI players can use different algorithms, including Minimax and Monte Carlo Search Tree. 
 
 ## How to Run
 	1) make sure you give execution privliges to the script game.sh using `chmod u+x game.sh`
@@ -25,7 +18,7 @@ This project implements the game of Connect Four wih different types of players.
 	./game.sh 67 mm 43      ==>     board of size 6x7, and two Minimax players
                                         with lookaheads 4 and 3 respectively
 ## Project Structure
-	- questions.txt: contains short answers to the handout questions 1 and 3
+	- **questions.txt**: contains short answers to the handout questions 1 and 3
 	- discussion.pdf: contains discussions of the game players performance using
 			  different algorithms
 
