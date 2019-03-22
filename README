@@ -5,11 +5,11 @@
 
 ## How to Run
 	1) make sure you give execution privliges to the script game.sh using `chmod u+x game.sh`
-	2) follow the instructions in game.sh to learn more about the arguments needed. Below are
-	   a couple of examples of how to run the game with different parameters
+	2) follow the instructions in game.sh to learn more about the arguments needed. You can set 	      parameters such as Board Dimensions, and Player Types (AI algorithm), and Lookaheads.
+	   Below are a couple of examples of how to run the game with different parameters
 	
-	./game.sh      	 	==>	runs the game with default board dimensions and 
-					player types and lookaheads (found in globals.jl) 
+	./game.sh      		 	==>	runs the game with default board dimensions and 
+						player types and lookaheads (found in globals.jl) 
 
 	./game.sh 67 rc         ==>     runs the game with a board of size 6x7
                                         and Player 1 with Expectiminimax, and
@@ -20,7 +20,7 @@
                                         with lookaheads 4 and 3 respectively
 ## Project Structure
 	- questions.txt: contains short answers to the handout questions 1 and 3
-	- discussion.pdf: contains discussions of the game players performance using
+	- discussion.pdf: short report and discussions of the game players performance using
 			  different algorithms
 
 	- game.sh: a script used to run the game with custom arguments
@@ -35,21 +35,3 @@
 	- connectfour.jl: where the game is initiated, and players take turn. Announces winners and ties at the end of the game.
 	- tests.jl: few tests to test the board winning functions 
 
-
-- Board: represents a board object with a constructor that takes two
-values: height and width. The board creates a 2D array of the given
-dimensions. It allows to add a checker (or checkers) at a given column,
-and detects illegal checkers or full columns, or full boards.
-
-- Player: represents a player object which has a designated checker
-and a number of moves to keep track. The player has different
-algorithms to choose its next move, namely: Random, MiniMax, or
-Monte Carlo.
-        >>> Random: selects a random available column
-        >>> Minimax:
-        >>> Monte Carlo
-
-- ConnectFour: represents the game, which initializes a board of
-user-input dimensions, and two players with a specified playing
-algorithm (listed above), alternates turns between players, and
-ends the game if a win or a tie occur.
