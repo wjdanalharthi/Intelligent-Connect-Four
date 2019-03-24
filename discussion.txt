@@ -12,7 +12,9 @@ Assumptions and Constants:
 	The maximum lookahead I was able to get to without slowing the execution
 	by much is 6. As for the exploration constant C, I tried different values
 	ranging between 0.8-1.5. Theoritically 1.4 seems to be the best, and I
-	noticed a good performance overall (examples below).	
+	noticed a good performance overall (examples below). Finally, Monte Carlo
+	game simulations are run for 10,000 times. More than that would take a couple
+	of seconds.
 
 AI Algorithms
 	- Minimax

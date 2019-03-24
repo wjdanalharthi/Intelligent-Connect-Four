@@ -22,30 +22,30 @@ function monte_carlo_search(b::Board, p::Player, simulationsNum::Int64)
         end
 
 	# starts simulations until simulationsNum is reached
-        gamesPlayed = 0
-        while(gamesPlayed <= simulationsNum)
-                gamesPlayed += 1
+        gamesRan = 0
+        while(gamesRan <= simulationsNum)
+                gamesRan += 1
                 runSimulation(b, p)
         end
 
 	# after simulations are done, we calculate statistics
         play = nothing
-        movesState = []
+        allMoves = []
         ratios = Dict()
        
 	# we obtain all states and their children for available columns
 	for i in valid_col
-                nextS = getNext(deepcopy(b), i, p.checker)
-                append!(movesState, [[i, nextS]])
+                nextMove = getNext(deepcopy(b), i, p.checker)
+                append!(allMoves, [[i, nextMove]])
         end
 
 	# then for each state, if visited, then we calculate the ratio
-        for j=1:length(movesState)
-                play = [p.checker, movesState[j][2]]
+        for j=1:length(allMoves)
+                play = [p.checker, allMoves[j][2]]
                 if play in keys(wins)
-                        ratios[movesState[j][1]] = wins[play]/plays[play]
+                        ratios[allMoves[j][1]] = wins[play]/plays[play]
                 else
-                        ratios[movesState[j][1]] = 0
+                        ratios[allMoves[j][1]] = 0
                 end
         end
         
@@ -82,9 +82,9 @@ end
 
 function runSimulation(b::Board, p::Player)
 	""" we run the simulations here """ 
-        visitedStates = []
+        visited = []
         checker = p.checker
-        expand = true
+        isExpand = true
         winnerChecker = -1
 	state = deepcopy(b.slots)
 
@@ -117,15 +117,15 @@ function runSimulation(b::Board, p::Player)
 
 		# EXPANSION
 		# if we have not explored current child, initialize its stats
-                if expand && !([checker, state] in keys(plays))
-                        expand = false
+                if isExpand && !([checker, state] in keys(plays))
+                        isExpand = false
                         plays[[checker, state]] = 0
                         wins[[checker, state]] = 0
                 end
 
 		# if we haven't visited the current state, add it to array
-                if !([checker, state] in visitedStates)
-                        append!(visitedStates, [[checker, state]])
+                if !([checker, state] in visited)
+                        append!(visited, [[checker, state]])
                 end
 
 		# check for winners in current state
@@ -142,9 +142,9 @@ function runSimulation(b::Board, p::Player)
         end
 
 	# BACKPROPAGATION
-        for i=1:length(visitedStates)
-                checker = visitedStates[i][1]
-                state = visitedStates[i][2]
+        for i=1:length(visited)
+                checker = visited[i][1]
+                state = visited[i][2]
 
                 if !([checker, state] in keys(plays))
                         continue
