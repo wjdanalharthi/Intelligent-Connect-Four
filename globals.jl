@@ -24,7 +24,7 @@ DEFAULT_LOOKAHEAD = '3'
 Maximizer = 'X'
 
 # default number of Monte Carlo simulations
-Simulations = 20000
+Simulations = 10000
 
 # default exploration parameter
 C = sqrt(2)

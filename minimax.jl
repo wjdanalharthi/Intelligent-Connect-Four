@@ -11,9 +11,9 @@ function minimax(b::Board, p::Player, depth::Int64, isMaximizer::Bool)
 	# start with large minimum-1 number for Maximizer, and large 
 	# positive number+1 for Minimizer. 
 	if isMaximizer
-                best = (typemin(Int32)-1, "x")
+                best = (typemin(Int32)-1, nothing)
 	else
-                best = (typemax(Int32)+1, "y")
+                best = (typemax(Int32)+1, nothing)
         end
 
 	# if the game is over (win or full board), return the scores 

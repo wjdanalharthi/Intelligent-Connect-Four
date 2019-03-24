@@ -80,6 +80,7 @@ function next_move_expectiminimax(b::Board, p::Player)
 
 	# if we set the flag to true, we get a random available column
 	if isRandom
+		print(" (random)")
 		move = rand(available_cols(b))
 	end
 
@@ -135,13 +136,13 @@ function isOver(b::Board, p::Player, depth::Int64, isMaximizer::Bool)
 	# and he is a maximizer, we giveh im the most minimum number to
 	# insure he will block the opponent, and vice-versa
         if is_win_for_anywhere(b, p.checker)
-                if isMaximizer
+		if isMaximizer
                         return (typemax(Int32), nothing)
                 else
                         return (typemin(Int32), nothing)
                 end
         elseif is_win_for_anywhere(b, opponent_checker(p))
-                if isMaximizer
+		if isMaximizer
                         return (typemin(Int32), nothing)
                 else
                         return (typemax(Int32), nothing)

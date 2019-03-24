@@ -44,7 +44,16 @@ function get_minimum(scores::Array)
         elseif length(scores) == 1
                 return scores[1]
         else
-                return min(scores...)
+		# if there is more that one minimum
+		# score, we choose randomly between them
+		minimum = min(scores...)
+		all_mins = []
+		for score in scores
+			if score[1] == minimum[1]
+				append!(all_mins, [score])
+			end
+		end
+		return rand(all_mins)
         end
 end
 
@@ -62,10 +71,12 @@ function vertical_eval(b::Board, checker::Char)
 			if current == checker count += 1
 			elseif current == ' '
 				remaining = 4 - count
-				if row <= remaining break end
-				overheads = 1
+				if (row-1) <= (remaining) break end
+				overheads = 0
 				score = remaining + overheads
-				append!(scores, [(score, col)])
+				if !((score, col) in scores)
+					append!(scores, [(score, col)])
+				end
 				break
 			else count = 0 end
 			row -= 1
@@ -91,8 +102,10 @@ function horizontal_eval(b::Board, checker::Char)
                                 remaining = 4 - count
 				overheads = overheads_eval(b, row, col)
                                 score = remaining + overheads
-				append!(scores, [(score, col)])
-                                break
+				if !((score, col) in scores)
+                                        append!(scores, [(score, col)])
+                                end 
+				break
 			else count = 0 end
 			col += 1
 		end
@@ -108,8 +121,10 @@ function horizontal_eval(b::Board, checker::Char)
                                 remaining = 4 - count
 				overheads = overheads_eval(b, row, col)
                                 score = remaining + overheads
-				append!(scores, [(score, col)])
-                                break
+                                if !((score, col) in scores)
+                                        append!(scores, [(score, col)])
+                                end 
+				break
 			else count = 0 end
                         col -= 1
                 end
@@ -143,8 +158,10 @@ function diagonal_up_eval(b::Board, checker::Char)
                                 	remaining = 4 - count
                                 	overheads = overheads_eval(b, row, col)
                                 	score = remaining + overheads
-					append!(scores, [(score, col)])
-                                	break
+                                	if !((score, col) in scores)
+                                        	append!(scores, [(score, col)])
+                                	end 
+					break
 				else count = 0 end
 				col += 1
 				row -= 1
@@ -174,8 +191,10 @@ function diagonal_up_eval(b::Board, checker::Char)
                                         remaining = 4 - count
 					overheads = overheads_eval(b, row, col)
                                         score = remaining + overheads
-					append!(scores, [(score, col)])
-                                        break
+                                        if !((score, col) in scores)
+                                        	append!(scores, [(score, col)])
+                                	end 
+					break
 				else count = 0 end
                                 col -= 1
                                 row += 1
@@ -214,8 +233,10 @@ function diagonal_down_eval(b::Board, checker::Char)
                                         remaining = 4 - count
                                         overheads = overheads_eval(b, row, col)
                                         score = remaining + overheads
-					append!(scores, [(score, col)])
-                                        break
+                                        if !((score, col) in scores)
+                                        	append!(scores, [(score, col)])
+                                	end 
+					break
 				else count = 0 end
                                 col -= 1
                                 row -= 1
@@ -245,8 +266,10 @@ function diagonal_down_eval(b::Board, checker::Char)
                                         remaining = 4 - count
                                         overheads = overheads_eval(b, row, col)
                                         score = remaining + overheads
-					append!(scores, [(score, col)])
-                                        break
+                                        if !((score, col) in scores)
+                                        	append!(scores, [(score, col)])
+                                	end 
+					break
 				else count = 0 end
                                 col += 1
                                 row += 1

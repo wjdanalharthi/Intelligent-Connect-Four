@@ -100,9 +100,11 @@ function runSimulation(b::Board, p::Player)
 		# obtains all children of current state
                 states = [(p, getNext(Board(state), p, checker)) for p in valid_col]
 
-		# if we have explored all children, then calculate UTC scores
-		# and return the maximum. Otherwise, randomly explore another child
-                if sum([haskey(plays, i) for i in states]) == length(states)
+		# SELECTION
+		# if we have explored all children, then calculate UCT scores
+		# and choose the child with maximum UCT 
+                # otherwise, randomly choose an unexpanded child
+		if sum([haskey(plays, i) for i in states]) == length(states)
 			w = wins[i]
 			n = plays[i]
                         N = sum([plays[i] for i in states])
@@ -113,6 +115,7 @@ function runSimulation(b::Board, p::Player)
                         move, state = rand(states)
                 end
 
+		# EXPANSION
 		# if we have not explored current child, initialize its stats
                 if expand && !([checker, state] in keys(plays))
                         expand = false
@@ -138,7 +141,7 @@ function runSimulation(b::Board, p::Player)
                 p.checker = checker
         end
 
-	# after simulations are done, update statistics of states
+	# BACKPROPAGATION
         for i=1:length(visitedStates)
                 checker = visitedStates[i][1]
                 state = visitedStates[i][2]
@@ -153,3 +156,4 @@ function runSimulation(b::Board, p::Player)
                 end
         end
 end
+

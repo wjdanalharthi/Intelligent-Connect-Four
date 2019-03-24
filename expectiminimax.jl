@@ -34,7 +34,15 @@ function expectiminimax(b::Board, p::Player, depth::Int64, isMaximizer::Bool)
 			move = c1
 			layer1 += score
 			remove_checker(b, c1)
-			break
+
+			# indication of who won, the player or
+			# his opponent. Forces it to take Minimax score's 
+			# to play deterministically to force the win or block it
+			if (isMaximizer && score > 0) || (!isMaximizer && score < 0)
+				return (1, 1)
+			elseif (isMaximizer && score < 0) || (!isMaximizer && score > 0)
+				return (-1, 1)
+			end
 		end
 
 		# if not over, evaluate state and add score to layer1
@@ -58,8 +66,17 @@ function expectiminimax(b::Board, p::Player, depth::Int64, isMaximizer::Bool)
         	                move = c2
 				layer2 += score
 				remove_checker(b, c2)
-                	        break 
-                	end
+				remove_checker(b, c1)
+                       
+				# indication of who won, the player or
+                        	# his opponent. Forces it to take Minimax score's 
+                        	# to play deterministically to force the win or block it
+				if (isMaximizer && score > 0) || (!isMaximizer && score < 0) 
+                                	return (1, 1)
+                        	elseif (isMaximizer && score < 0) || (!isMaximizer && score > 0)
+                                	return (-1, 1)
+                        	end  
+			end
 
 			(score, move) = state_eval(b, opponent, !isMaximizer)
                         layer2 += score

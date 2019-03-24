@@ -5,4 +5,555 @@ DESCRIBTION: this file discusses the performance of different AI players
 	     and the evaluation function performance. 
 """
 
+Assumptions and Constants:
+	All assumptions and constants values are defined `global.jl` file.
+	Constants such as Monte Carlo's exploration constant C and the
+	default Lookaheads for Minimax and Expectiminimax.
+	The maximum lookahead I was able to get to without slowing the execution
+	by much is 6. As for the exploration constant C, I tried different values
+	ranging between 0.8-1.5. Theoritically 1.4 seems to be the best, and I
+	noticed a good performance overall (examples below).	
+
+AI Algorithms
+	- Minimax
+		ran with depth = 3 by default. I reserve 4 numbers for special
+		cases, which are:
+		{typemin(Int32), typemax(Int32), typemin(Int32)-1, typemax(Int32)+1}
+		First special case is when we haven't explored any columns,
+		the Maximizer will have a score of typemin(Int32)-1, that is
+		the most minimim number - 1 (smaller than most minimum). And
+		vice-versa for the Minimizer (has value of typemax(Int32)+1). 
+		Second special case is when the player or his opponent is 
+		winning in the next move. If the current player is a Maximizer
+		and he is winning, he gets a score of typemax(Int32) to force 
+		him to take the move to win. If a maximizer opponent is winning,
+		however, then he gets typemin(Int32) to force him to take the move
+		to block his opponent. Vice-versa for the minimizer. 		
+
+		Other than that, the current player will make moves and simulate his
+		opponent's moves until depth == 0 or the board is full, or a winner
+		is found. After that states get evaluated and chosen by Maximizers
+		and Minimizers.
+ 
+	- Expectiminimax
+		ran with depth = 3 by default. I reserve 2 numbers for one special 
+		case which is the player is winning or his opponent {typemin, typemax}.
+		For the first 2 layers (of depth), I try all columns of layer 2 for
+		each state in layer 1. For the remaining layers (up to depth), the 
+		regular Minimax is used to obtain the scores. Finally, I aggregate
+		each layer's scores and average them (multiply by probability of 
+		choosing a column). 
+		After obtaining the score from Expectiminimax, I run pure Minimax
+		on the same board and obtain its scores (deterministic). 
+		I compare the two scores and I choose one best for the current player.
+		If the score from Expectiminimax is chosen, a isRandom flag is passed
+		to force the opponent to play randomly. 
+
+	- Monte Carlo
+		I explore all states until a leaf node, keeping track of statistics,
+		including number of visits and wins. I use 10,000 simulations. 
+		For selection, if all children have been explored, the I use UCT to
+		choose the child with the best UCT score, otherwise I randomly choose
+		an unvisited child. 
+		I chose the exploration constant to be equal to SquareRoot(2), or 1.4
+		as it showed a good performance overall, and a good balance between
+		expanding and exploiting.
+		I initialize the child's statistics and keep expanding and selecting
+		until simulations are done. I propagate the statistics and calculate
+		the ratios of win/plays, and select the column that leads to the
+		highest ratio. 
+
+
+Heuristic and Evaluation Function
+	I created an evaluation functions that is based on the consecutive number of
+	checkers. The goal is for both players to minimize the remaining number of
+	checkers to complete a sequence of 4. I check all possible directions, starting
+	at all possible slots, and I return a score per column, being the number of
+	remaining checkers. 
+	For a better indication of the number of remaining checkers, I also count the
+	number of overhead checkers. Overhead checkers are the ones that are not part
+	of the checker sequence, but they are needed for the sequence to be completed.
+	The scores for the Maximizer are multiplies by -1 for him to maximize it (choosing
+	the smallest number of remaining checkers), and for the minimizer to minimize
+	the positive score.
+	An example of scores for the board below:
+	 |   |   |   |   |   |   | 
+	 | X |   |   |   |   |   | 
+	 | X |   | O | O | O |   | 
+	 | O | O | O | O | X |   | 
+	 | X | O | X | X | X |   | 
+	---------------------------
+	   1   2   3   4   5   6
+	
+	For checker O:
+		vertical = (2,2): your best shot is playing at column 2, you have 2 remaining
+		horizontal = (1,2): best move would be at 2 because you have 1 remaining (winner)
+		diagonalUp = (1,5): play at 5 because you have 1 remaining (winner)
+		diagonalDown = (3,2): you have 3 remaining to get a full diagonal down sequence.
+					Here is where the overhead checkers come in play.
+				       	We see that we need 2 `O` checkers in cols 1 and 2 
+				       	to complete the sequence in cols 3 and 4. However, we need
+				       	an extra "overhead" checker in col 2 (O or X) to raise the
+				       	'O' checker to be part of the sequence.
+
+	For checker X:
+		vertical = (5,6): best move would be at col 6, there is no chance in any other col!
+		horizontal = (1,6): you have 1 remaining, play at column 6
+		diagonalUp = (4,2): no sequences can be completed, play at 2
+		diagonalDown = (4,2): no sequences can be completed, play at 2 
+
+
+Different Runs of The Game:
+	I will go through some runs of the game between different types of players. 
+	I think a game between a Minimax player and a Monte Carlo player shows off 
+	how well the two algorithms perform by seeking a win when possible, and blocking
+	an opponent's win when needed, and showing the goodness of the Minimax eval functions. 
+	Below is a game on a 6x7 board, between Minimax (lookahead=3) and Monte Carlo
+	I deleted some of the turns as they were not interesting.
+	Player X: Monte Carlo, Player O: Minimax
+
+	Player X (Monte Carlo)'s turn: at 4
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | X |   |   |   | 
+	 | O |   | O | X |   |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Minimax)'s turn: at 4
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | X |   |   |   | 
+	 | O |   | O | X |   |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: The MCST player was successfully trying to build a vertical
+			 sequence at col 4, but the Minimax player success fully blocked
+			 his sequence because it detected the win.
+
+	Player X (Monte Carlo)'s turn: at 5
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | X |   |   |   | 
+	 | O |   |   | X |   |   |   | 
+	 | O |   | O | X | X |   | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Minimax)'s turn: at 6
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | X |   |   |   | 
+	 | O |   |   | X |   |   |   | 
+	 | O |   | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: again, here MCST player tried to build a sequence at 
+			cols 4-7, but Minimax detected the horizontal win and blocked
+			him at col 6.
+
+	Player O (Minimax)'s turn: at 1
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 | O |   |   | X |   |   |   | 
+	 | O |   |   | X | X |   |   | 
+	 | O |   | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player X (Monte Carlo)'s turn: at 1
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 | X |   |   | O |   |   |   | 
+	 | O |   |   | X |   |   |   | 
+	 | O |   |   | X | X |   |   | 
+	 | O |   | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: here it is the opposite. Minimax player was trying to build
+			 a sequence at col 1, but MCST successfully blocked it.
+
+	Player X (Monte Carlo)'s turn: at 5
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 | X |   |   | O |   |   |   | 
+	 | O |   |   | X | X |   |   | 
+	 | O |   | O | X | X |   |   | 
+	 | O |   | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Minimax)'s turn: at 5
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 | X |   |   | O | O |   |   | 
+	 | O |   |   | X | X |   |   | 
+	 | O |   | O | X | X |   |   | 
+	 | O |   | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: again at column 4, Minimax blocked MCST player.
+
+	Player X (Monte Carlo)'s turn: at 2
+	 | O |   | O | O |   |   |   | 
+	 | O |   | X | X |   |   |   | 
+	 | X |   | X | O | O |   |   | 
+	 | O |   | X | X | X |   |   | 
+	 | O | X | O | X | X |   | O | 
+	 | O | X | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Minimax)'s turn: at 2
+	 | O |   | O | O |   |   |   | 
+	 | O |   | X | X |   |   |   | 
+	 | X |   | X | O | O |   |   | 
+	 | O | O | X | X | X |   |   | 
+	 | O | X | O | X | X |   | O | 
+	 | O | X | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: here Minimax blocks a horizontal win for MCST player
+
+	Player X (Monte Carlo)'s turn: at 2
+	 | O |   | O | O |   |   |   | 
+	 | O |   | X | X |   |   |   | 
+	 | X | X | X | O | O |   |   | 
+	 | O | O | X | X | X |   |   | 
+	 | O | X | O | X | X |   | O | 
+	 | O | X | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: but little did the Minimax player knew! He helped MCST player
+		build a diagonal down sequence starting at [3, 2] ending at [6, 5]
+	Monte Carlo wins!
+
+	=========================================
+	
+	Here is a very interesting game in my opinion between Expectiminimax and
+	Monte Carlo. This game involved alot of blocking. I shows off how well 
+	both Monte Carlo and Expectiminimax/Minimax evaluation functions detect 
+	winning of their opponents. It also shows off how randomness of Expectiminimax 
+	increases its chances of winning sometimes, and how Expectiminimax intelligently
+	plays deterministically when it is, or its opponent is close to winning.
+
+	Player O (Expectiminimax)'s turn: (random) at 4
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X |   |   |   | 
+	 |   |   | O | X |   | X |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: with multiple random moves by Expectiminimax and forced random moves 
+	on Monte Carlo, Expectiminimax was able to come close to build a full sequence. 
+
+	Player X (Monte Carlo)'s turn: (forced) at 4
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X |   |   |   | 
+	 |   |   | O | X |   | X |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: Monte Carlo blocked it successfully
+
+	Player O (Expectiminimax)'s turn: at 1
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X |   |   |   | 
+	 | O |   | O | X |   | X |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player X (Monte Carlo)'s turn: at 5
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X |   |   |   | 
+	 | O |   | O | X | X | X |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player O (Expectiminimax)'s turn: at 7
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X |   |   |   | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: Monte Carlo's sequence was deterministically blocked
+	 by Expectiminimax
+
+	Player X (Monte Carlo)'s turn: at 5
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X | X |   |   | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Expectiminimax)'s turn: at 6
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   | X | X | X | O |   | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: here, again, Comment: Monte Carlo's sequence was 
+	deterministically blocked by Expectiminimax
+
+	Player X (Monte Carlo)'s turn: at 5
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O | X |   |   | 
+	 |   |   | X | X | X | O |   | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+	Player O (Expectiminimax)'s turn: at 5
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O | O |   |   | 
+	 |   |   |   | O | X |   |   | 
+	 |   |   | X | X | X | O |   | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: yet, again blocked by Expectiminimax
+
+	Player X (Monte Carlo)'s turn: at 7
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O | O |   |   | 
+	 |   |   |   | O | X |   |   | 
+	 |   |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player O (Expectiminimax)'s turn: at 1
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O | O |   |   | 
+	 |   |   |   | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player X (Monte Carlo)'s turn: at 3
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O | O |   |   | 
+	 |   |   | X | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player O (Expectiminimax)'s turn: at 1
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 |   |   |   | O | O |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player X (Monte Carlo)'s turn: at 1
+	 |   |   |   | X |   |   |   | 
+	 |   |   |   | O |   |   |   | 
+	 | X |   |   | O | O |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: here, Expectiminimax was blocked by Monte Carlo
+
+	Player O (Expectiminimax)'s turn: at 1
+	 |   |   |   | X |   |   |   | 
+	 | O |   |   | O |   |   |   | 
+	 | X |   |   | O | O |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player X (Monte Carlo)'s turn: at 3
+	 |   |   |   | X |   |   |   | 
+	 | O |   |   | O |   |   |   | 
+	 | X |   | X | O | O |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+
+	Player O (Expectiminimax)'s turn: at 3
+	 |   |   |   | X |   |   |   | 
+	 | O |   | O | O |   |   |   | 
+	 | X |   | X | O | O |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | O |   | X | X | X | O | X | 
+	 | O |   | O | X | X | X | O | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: Monte Carlo blocked, again
+
+	=========================================
+
+	Now this is a game between two Expectiminimax players (lookaheads=3)
+	Player X: Expectiminimax, Player O: Expectiminimax
+
+
+	Player X (Expectiminimax)'s turn: (random) at 4
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | X |   | X | X |   |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: with a random move, player X increased his chances of winning with
+		a horizontal sequence. Since Player O is now forced to play randomly, 
+		there is a 1/7 probability that he will block X's win.
+
+	Player O (Expectiminimax)'s turn: (forced) at 4
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | O |   |   | O |   |   |   | 
+	 | X |   | X | X |   |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player X (Expectiminimax)'s turn: at 2
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 |   |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | O |   |   | O |   |   |   | 
+	 | X | X | X | X |   |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Comment: we see that the random move that O made did not block X's sequence.
+		Player X evaluated the board and realized there is a chance of winning.
+		Hence, instead of making a random move, it deterministically used Minimax
+		to complete the sequence and win!
+
+	=========================================
+
+	A another similar game but Player O is winning
+
+	Player O (Expectiminimax)'s turn: (random) at 4
+	 |   |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | X |   |   |   |   |   |   | 
+	 | X |   |   | O |   |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | X |   | X | O | O |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player X (Expectiminimax)'s turn: (forced) at 1
+	 | X |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | X |   |   |   |   |   |   | 
+	 | X |   |   | O |   |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | X |   | X | O | O |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Expectiminimax)'s turn: at 4
+	 | X |   |   |   |   |   |   | 
+	 | O |   |   |   |   |   |   | 
+	 | X |   |   | O |   |   |   | 
+	 | X |   |   | O |   |   |   | 
+	 | O |   | X | O | X |   |   | 
+	 | X |   | X | O | O |   |   | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	=========================================
+
+	Another one, but with a more filled out board due to randomness (makes speed worse)
+
+	Player X (Expectiminimax)'s turn: (random) at 7
+	 | O |   |   |   |   |   |   | 
+	 | X |   |   |   |   |   |   | 
+	 | O |   | X |   |   |   |   | 
+	 | X | O | O |   |   | X | X | 
+	 | O | O | X | O | O | O | X | 
+	 | X | X | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player O (Expectiminimax)'s turn: (forced) at 2
+	 | O |   |   |   |   |   |   | 
+	 | X |   |   |   |   |   |   | 
+	 | O | O | X |   |   |   |   | 
+	 | X | O | O |   |   | X | X | 
+	 | O | O | X | O | O | O | X | 
+	 | X | X | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
+
+	Player X (Expectiminimax)'s turn: at 7
+	 | O |   |   |   |   |   |   | 
+	 | X |   |   |   |   |   |   | 
+	 | O | O | X |   |   |   | X | 
+	 | X | O | O |   |   | X | X | 
+	 | O | O | X | O | O | O | X | 
+	 | X | X | O | X | X | O | X | 
+	-------------------------------
+	   1   2   3   4   5   6   7
 
